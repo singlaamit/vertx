@@ -1,0 +1,88 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '2.0.1'
+    id 'maven-publish'
+}
+
+group = 'com.example.demoApp'
+repositories {
+    mavenLocal()
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+}
+
+version = '1.0.4-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+ext {
+    vertxVersion = '3.5.0'
+    artifactPath = 'build/libs/demoApp-' + version + '.jar'
+}
+
+dependencies {
+
+    compile "io.vertx:vertx-core:$vertxVersion"
+
+    compile "io.vertx:vertx-unit:$vertxVersion"
+
+    compile 'io.vertx:vertx-web:3.5.0'
+
+    compile "io.vertx:vertx-mongo-client:3.5.0"
+
+    compile "io.vertx:vertx-web-templ-handlebars:3.5.1"
+
+    compile 'io.vertx:vertx-jdbc-client:3.5.1'
+
+    compile 'io.vertx:vertx-mysql-postgresql-client:3.5.1'
+}
+
+mainClassName = 'io.vertx.core.Launcher'
+
+shadowJar {
+    classifier = 'fat'
+    manifest {
+        attributes 'Main-Verticle': 'com.example.demoApp.MainVerticle'
+    }
+    mergeServiceFiles {
+        include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
+    }
+}
+
+/*run {
+    args = ['run', mainClassName, "--launcher-class=io.vertx.core.Launcher"]
+}*/
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.0'
+}
+
+//create a single Jar with all dependencies
+task fatJar(type: Jar) {
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+
+publishing {
+    publications {
+        mavenJava( MavenPublication ) {
+            artifact artifactPath
+            /* can specify a classifier if not encoded in the filename
+            artifact jarToPublish {
+                classifier 'theClassifier'
+            }
+            */
+        }
+    }
+    repositories {
+        maven {
+            url 'http://192.168.2.90:8081/repository/cogneesol-java-hosted/'
+            credentials {
+                username 'admin'
+                password 'admin123'
+            }
+        }
+    }
+}
